@@ -21,7 +21,7 @@ def get_photo_list(lst, pets_url):  # 获得包含所有宠物图片url的列表
 
 
 def get_photos(lst, root):
-    count = 0  # 为循环计数做准备，用于计算爬取进度
+    count = 0   # 为循环计数做准备，用于计算爬取进度
     for url in lst:
         count += 1
         # print('\r当前进度:{:.2f}%'.format(count * 100 / len(lst)), end='')  # 一个当前爬取进度的输出
