@@ -9,7 +9,7 @@ from time import sleep
 # browser.quit()
 
 # 实例
-import json
+import csv
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -17,8 +17,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib.parse import quote
 
+#chrome的无界面模式，爬取时不会弹出浏览器(需要调试时建议还是换到有界面模式)
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument('--headless')
+browser = webdriver.Chrome(r'D:/Program Files/Chrome-bin/Chrome-bin/chromedriver.exe', chrome_options=chrome_options)
 
-browser = webdriver.Chrome(r'D:\2017\百度云下载文件\Chrome-bin\Chrome-bin\chromedriver.exe')
+#chrome的有界面模式：
+#browser = webdriver.Chrome(r'D:/Program Files/Chrome-bin/Chrome-bin/chromedriver.exe')
+
 KEYWORD = 'iPad'  # 设置你所要爬取的商品
 wait = WebDriverWait(browser, 10)  # 这是一个显式等待的设置
 
@@ -29,20 +35,22 @@ def index_page(page):
     :param page: 页码
     """
     print('正在爬取第', page, '页')
+    #先定义csv文件并写上标签栏
     try:
         url = 'https://s.taobao.com/search?q=' + quote(KEYWORD)  # quote()可有效屏蔽一些url中不被允许的字符
         browser.get(url)  # 用chrome打开url对应界面
-        #browser.minimize_window()
+        if page == 1:
+            browser.maximize_window() #为使location信息加载完全
         if page > 1:
-            input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="mainsrp-pager"]//div[@class="form"]/input')))
-            # 在规定时间(10s)内返回查找到的页面跳转输入框，并赋给input
-            submit = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@id="mainsrp-pager"]//div[@class="form"]/span[3]')))
-            # 在规定时间(10s)内返回查找到的确定点击按钮，并赋给submit
-            input.clear()
-            input.send_keys(page)  # 输入要跳转页面到跳转框内
-            submit.click()  # 点击确定按钮
+                input = wait.until(
+                    EC.presence_of_element_located((By.XPATH, '//*[@id="mainsrp-pager"]//div[@class="form"]/input')))
+                # 在规定时间(10s)内返回查找到的页面跳转输入框，并赋给input
+                submit = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@id="mainsrp-pager"]//div[@class="form"]/span[3]')))
+                # 在规定时间(10s)内返回查找到的确定点击按钮，并赋给submit
+                input.clear()
+                input.send_keys(page)  # 输入要跳转页面到跳转框内
+                submit.click()  # 点击确定按钮
 
         wait.until(
                 EC.text_to_be_present_in_element((By.CSS_SELECTOR, '#mainsrp-pager li.item.active span'), str(page)))
@@ -60,7 +68,7 @@ def get_products():
     提取商品数据
     """
     nums = len(browser.find_elements_by_css_selector('.m-itemlist .items .item'))  # 提取商品个数
-    products = []
+    #products = []
     for num in range(nums):
         product = {
             'price': browser.find_elements_by_css_selector('.m-itemlist .items .item .price strong')[num].text,
@@ -72,17 +80,19 @@ def get_products():
                 num].text
         }
         print(product)
-        products.append(product)
-    save_to_json(products)
+        #products.append(product)
+        save_to_csv(product)
 
-def save_to_json(products):
+def save_to_csv(product):
     try:
-        with open('C:/Users/吕港/Desktop/Matilda/data.json','a') as file:
-            file.write(json.dumps(products, indent=2,ensure_ascii=False))
-        print('存储到json文件成功')
+        with open('C:\\Users\\47458\\Desktop\\data.csv', 'a', encoding='gb18030', newline='') as csvfile:
+            fieldnames = ['price', 'deal', 'title', 'shop', 'location']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow(product)
+        print('存储到csv文件成功')
 
     except:
-        print('存储到json文件失败')
+        print('存储到csv文件失败')
 
 
 
@@ -92,6 +102,11 @@ def main():
     遍历每一页
     """
     MAX_PAGE = 100
+    #在主函数中创建csv文件的标签行
+    with open('C:\\Users\\47458\\Desktop\\data.csv', 'w', encoding='gb18030', newline='') as csvfile:
+        fieldnames = ['price', 'deal', 'title', 'shop', 'location']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
     for i in range(1, MAX_PAGE + 1):
         index_page(i)
     browser.close()
